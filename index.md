@@ -266,4 +266,4 @@ Following a flow-chart to visualize how the request will flow through Herald and
 - fastavro: https://fastavro.readthedocs.io/
 - Apache Avro specification: https://avro.apache.org/docs/current/spec.html
 - Confluent Wire Format: https://docs.confluent.io/platform/current/schema-registry/serdes-develop/index.html#wire-format
-- DMTN-183: Alert Production Pipeline Design
+- DMTN-183: Alert Database Design
