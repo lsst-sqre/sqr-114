@@ -49,6 +49,7 @@ The relationship between alert IDs and sky position or other attributes is the r
 
 ### Alert packet format
 
+The Rubin alert packet format is described in [DMTN-093](https://dmtn-093.lsst.io/).
 Rubin alert packets are serialised using Apache Avro (https://avro.apache.org/) with the Confluent Wire Format (https://docs.confluent.io/platform/current/schema-registry/serdes-develop/index.html#wire-format).
 This is a binary format consisting of a 5-byte header followed by a schemaless Avro-encoded record:
 
@@ -387,3 +388,4 @@ System Flow Chart
 - IVOA DALI: https://www.ivoa.net/documents/DALI/
 - IVOA DataLink: https://www.ivoa.net/documents/DataLink/
 - DMTN-183: Alert Database Design
+- DMTN-093: Design of the LSST Alert Distribution System
