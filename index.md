@@ -268,6 +268,9 @@ The schema is used to determine column names and types for each BinTableHDU.
 | 8 | SSSOURCE | BinTableHDU: solar-system source, if present |
 | 9 | MPCORBIT | BinTableHDU: MPC orbit data, if present |
 
+The extensions above reflect the current `lsst.v10_0` schema.
+New top-level record and array fields added in future schema versions (e.g. `ssObject`, upper-limit structures) will appear as additional BinTableHDUs automatically, without requiring code changes in Herald (see :ref:`dynamic-fits-hdus`).
+
 ### Avro-to-FITS type mapping
 
 | Avro type | FITS format | Notes |
@@ -285,7 +288,7 @@ The schema is used to determine column names and types for each BinTableHDU.
 Column units are sourced from a bundled `column_units.yaml` resource file and attached as `TUNITn` header keywords.
 
 The DIASOURCE table also carries two additional columns: `trigger` (boolean, true for the triggering source) and `iau_id` (the IAU-format identifier `LSST-AP-DS-{diaSourceId}`).
-The `psfFlux` column is moved to immediately follow `midPointMjdTai` to facilitate default light-curve plots in standard tools including Firefly.
+The `psfFlux` column is moved to immediately follow `midpointMjdTai` to facilitate default light-curve plots in standard tools including Firefly.
 
 ## 8. Scope
 
@@ -334,6 +337,15 @@ Alert files are expected to always be gzip-compressed in current production, but
 
 When the user requests Avro format, returning the raw Confluent Wire Format bytes stored in S3 would not be useful to a client without the schema.
 Avro OCF is used instead because it embeds the full schema in the file header, making the response immediately usable by any Avro library without a separate request.
+
+### Dynamic FITS HDU assembly
+.. _dynamic-fits-hdus:
+
+`alert_to_fits` iterates the schema's top-level fields to build BinTableHDUs.
+Any top-level field whose Avro type resolves to a record or array-of-records is included automatically.
+A `_TABLE_HDU_NAMES` mapping provides canonical EXTNAMEs for known fields (`prvDiaForcedSources` -> `FORCEDPHOT`, etc.). Fields not in the mapping fall back to the uppercased field name.
+The DIASOURCE HDU is handled separately because it merges `diaSource` and `prvDiaSources` into a single table and injects new `trigger` and `iau_id` columns.
+Cutout fields are also excluded from the loop and handled as ImageHDUs.
 
 ### CPU-bound work and the event loop
 
