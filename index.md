@@ -258,18 +258,20 @@ The schema is used to determine column names and types for each BinTableHDU.
 | Extension | EXTNAME | Contents |
 |---|---|---|
 | 0 | PRIMARY | Empty; carries `TELESCOP=Rubin Observatory` and `INSTRUME=LSSTCam` headers |
-| 1 | ALERT | One-row BinTableHDU of top-level scalar alert fields |
+| 1 | ALERT | One-row BinTableHDU: top-level scalar fields plus columns from whichever of `diaObject`, `ssObject`, or `mpc_orbits` are present |
 | 2 | DIFFIM | Difference image cutout (ImageHDU), if present |
 | 3 | SCIENCE | Science image cutout (ImageHDU), if present |
 | 4 | TEMPLATE | Template image cutout (ImageHDU), if present |
 | 5 | DIASOURCE | BinTableHDU: triggering diaSource as row 0, followed by `prvDiaSources` |
 | 6 | FORCEDPHOT | BinTableHDU: `prvDiaForcedSources` (0 or more rows) |
-| 7 | DIAOBJECT | BinTableHDU: associated `diaObject` (0 or 1 rows) |
-| 8 | SSSOURCE | BinTableHDU: solar-system source, if present |
-| 9 | MPCORBIT | BinTableHDU: MPC orbit data, if present |
+| 7 | SSSOURCE | BinTableHDU: solar-system source, if present |
 
-The extensions above reflect the current `lsst.v10_0` schema.
-New top-level record and array fields added in future schema versions (e.g. `ssObject`, upper-limit structures) will appear as additional BinTableHDUs automatically, without requiring code changes in Herald (see :ref:`dynamic-fits-hdus`).
+The ALERT HDU is always a one-row table.
+`diaObject`, `ssObject`, and `mpc_orbits` are merged into it as additional columns rather than appearing as separate HDUs.
+Only one branch is expected per alertL: either a solar-system object  which will usually include `ssObject` and `mpc_orbits` columns, or alternatively alerts with the `diaObject` columns.
+In the current design, absent records will not show up in the ALERT table.
+
+New top-level record and array fields added in future schema versions will appear as additional BinTableHDUs automatically, without requiring code changes in Herald (see :ref:`dynamic-fits-hdus`).
 
 ### Avro-to-FITS type mapping
 
@@ -343,9 +345,12 @@ Avro OCF is used instead because it embeds the full schema in the file header, m
 
 `alert_to_fits` iterates the schema's top-level fields to build BinTableHDUs.
 Any top-level field whose Avro type resolves to a record or array-of-records is included automatically.
-A `_TABLE_HDU_NAMES` mapping provides canonical EXTNAMEs for known fields (`prvDiaForcedSources` -> `FORCEDPHOT`, etc.). Fields not in the mapping fall back to the uppercased field name.
-The DIASOURCE HDU is handled separately because it merges `diaSource` and `prvDiaSources` into a single table and injects new `trigger` and `iau_id` columns.
-Cutout fields are also excluded from the loop and handled as ImageHDUs.
+A `_TABLE_HDU_NAMES` mapping provides canonical EXTNAMEs for known fields (`prvDiaForcedSources` -> `FORCEDPHOT`, `ssSource` -> `SSSOURCE`, etc.). Fields not in the mapping fall back to the uppercased field name.
+
+Three fields are excluded from this loop and merged into the ALERT HDU instead (`_ALERT_MERGED_FIELDS`: `diaObject`, `ssObject`, `mpc_orbits`).
+Their columns are appended to the ALERT row only when the field is non-null in the alert record.
+The DIASOURCE HDU is also handled separately, specifically by merging `diaSource` and `prvDiaSources` into a single table and injecting extra `trigger` and `iau_id` columns.
+Cutout fields are excluded from the loop and handled as ImageHDUs.
 
 ### CPU-bound work and the event loop
 
